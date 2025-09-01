@@ -323,41 +323,40 @@ const joy = document.getElementById('joy');
 const joyBase = document.getElementById('joyBase');
 const joyStick = document.getElementById('joyStick');
 
-/* =================== Landscape-fit canvas (16:9) =================== */
-let WORLD_W = 960, WORLD_H = 540; // logical draw size in CSS px
+let WORLD_W = 960, WORLD_H = 540;
 
 function resizeCanvas(){
   const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
   const vpW = Math.max(1, window.innerWidth);
   const vpH = Math.max(1, window.innerHeight);
 
-  // Largest 16:9 that fits viewport (letterboxed either top/bottom or sides)
-  let targetCSSWidth = vpW;
-  let targetCSSHeight = Math.floor(targetCSSWidth * 9/16);
-  if (targetCSSHeight > vpH){
-    targetCSSHeight = vpH;
-    targetCSSWidth = Math.floor(targetCSSHeight * 16/9);
-  }
+  // Fill the whole screen; no letterboxing
+  WORLD_W = vpW;
+  WORLD_H = vpH;
 
-  WORLD_W = targetCSSWidth;
-  WORLD_H = targetCSSHeight;
+  // CSS size
+  canvas.style.width  = vpW + 'px';
+  canvas.style.height = vpH + 'px';
 
-  // JS controls the CSS size precisely; no aspect-ratio in CSS to conflict
-  canvas.style.width  = targetCSSWidth + 'px';
-  canvas.style.height = targetCSSHeight + 'px';
-
-  const w = Math.floor(targetCSSWidth  * dpr);
-  const h = Math.floor(targetCSSHeight * dpr);
+  // Backing store for crisp rendering
+  const w = Math.floor(vpW * dpr);
+  const h = Math.floor(vpH * dpr);
   if (canvas.width !== w || canvas.height !== h){
     canvas.width = w; canvas.height = h;
-    // Keep drawing units in CSS pixels; crisp on HiDPI
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
   }
 
   // keep player inside bounds after resize
   player.x = Math.min(Math.max(player.x, 40), WORLD_W-40);
   player.y = Math.min(Math.max(player.y, 40), WORLD_H-40);
 }
+
+addEventListener('resize', resizeCanvas);
+addEventListener('orientationchange', ()=>setTimeout(resizeCanvas, 60));
+document.addEventListener('DOMContentLoaded', resizeCanvas);
+setTimeout(resizeCanvas, 0);
+
+
 addEventListener('resize', resizeCanvas);
 addEventListener('orientationchange', ()=>setTimeout(resizeCanvas, 60));
 document.addEventListener('DOMContentLoaded', resizeCanvas);
@@ -1278,5 +1277,4 @@ canvas.addEventListener('mousemove', updateAim);
 
 </body>
 </html>
-
 
