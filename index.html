@@ -399,6 +399,28 @@ diffButtons.forEach(b=>{
 function rand(min,max){return Math.random()*(max-min)+min}
 function irand(min,max){return Math.floor(rand(min,max+1))}
 
+
+
+function faceTowards(x, y){
+  // Rotate player to face a point (x,y)
+  player.angle = Math.atan2(y - player.y, x - player.x) + Math.PI/2;
+}
+
+function enemyAtPoint(mx, my){
+  // Check regular enemies (topmost first)
+  for(let i = enemies.length - 1; i >= 0; i--){
+    const e = enemies[i];
+    const r = (e.size || 40) * 0.7; // hit radius similar to collisions
+    if (Math.hypot(mx - e.x, my - e.y) <= r) return e;
+  }
+  // Check boss (if present)
+  if (typeof currentBoss === 'object' && currentBoss){
+    const r = currentBoss.size * 0.8;
+    if (Math.hypot(mx - currentBoss.x, my - currentBoss.y) <= r) return currentBoss;
+  }
+  return null;
+}
+
 /* Floating text */
 function createFloatingText(x,y,text,color,fontSize=22,stroke='rgba(0,0,0,.25)', bg=null){
   const d=document.createElement('div');
@@ -721,6 +743,8 @@ canvas.addEventListener('mousemove', e=>{
   const r=canvas.getBoundingClientRect(); const mx=e.clientX-r.left,my=e.clientY-r.top;
   player.angle=Math.atan2(my-player.y,mx-player.x)+Math.PI/2;
 });
+
+
 function shootToward(mx,my){
   bullets.push(new Bullet(player.x, player.y, mx, my));
   synth.fire();
@@ -729,9 +753,21 @@ canvas.addEventListener('click', e=>{
   if(!gameStarted){ return; }
   if(!player.alive){ restart(); return; }
   if(paused){ togglePause(false); return; }
-  const r=canvas.getBoundingClientRect();
-  shootToward(e.clientX-r.left, e.clientY-r.top);
+
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+
+  const hit = enemyAtPoint(mx, my);
+  if (hit){
+    faceTowards(hit.x, hit.y); // just turn to face the tapped enemy
+    return;                    // don't shoot on an enemy tap
+  }
+
+  // normal click behavior (shoot toward point)
+  shootToward(mx, my);
 });
+
 
 /* Floating Glass Joystick (left side), tap right side to aim+shoot once */
 let joyActive=false, joyPID=null, joyStart={x:0,y:0}, joyVec={x:0,y:0}, joyMag=0;
@@ -760,12 +796,24 @@ function hideJoy(){
 
 canvas.addEventListener('pointerdown', e=>{
   if(!gameStarted || paused || !player.alive) return;
-  const rect=canvas.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
 
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  // If user tapped an enemy, face it (no firing)
+  const hit = enemyAtPoint(mx, my);
+  if (hit){
+    e.preventDefault();
+    faceTowards(hit.x, hit.y);
+    return;
+  }
+
+  // existing behavior below (left side joystick, right side aim+shoot)
   if(e.pointerType==='mouse'){
     return;
   }
+
   if(mx <= rect.width*0.60){
     e.preventDefault();
     const crect = container.getBoundingClientRect();
@@ -779,6 +827,7 @@ canvas.addEventListener('pointerdown', e=>{
     shootToward(mx,my);
   }
 });
+
 canvas.addEventListener('pointermove', e=>{
   if(joyActive && e.pointerId===joyPID){
     e.preventDefault();
