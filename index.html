@@ -204,16 +204,12 @@
   </div>
 
 <script>
-  // Background image
 const bgImg = new Image();
-bgImg.crossOrigin = "anonymous";
-
-  // This will be set after Flutter loads
-
-bgImg.src = 'bg.jpg';
-
+bgImg.crossOrigin = "anonymous"; // needed for external URLs
+bgImg.src = "bg.jpg";
 let bgReady = false;
 bgImg.onload = ()=>{ bgReady = true; };
+
 
 /* =================== Synth =================== */
 class Synth {
@@ -1282,4 +1278,5 @@ canvas.addEventListener('mousemove', updateAim);
 
 </body>
 </html>
+
 
