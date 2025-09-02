@@ -904,184 +904,288 @@ function spawnInterval(){ const base=2000; return base * Math.pow(0.92, level-1)
 const BOSS_PALETTES = {
   azure:   { fuselageA:'#0ea5e9', fuselageB:'#0369a1', wing:'#075985', stripe:'#67e8f9', glow:'#22d3ee', canopy1:'rgba(200,240,255,0.4)', canopy2:'rgba(200,240,255,0.12)' },
   scarlet: { fuselageA:'#ef4444', fuselageB:'#7f1d1d', wing:'#991b1b', stripe:'#fecaca', glow:'#fca5a5', canopy1:'rgba(255,230,230,0.4)', canopy2:'rgba(255,230,230,0.12)' },
-  midnight:{ fuselageA:'#7c3aed', fuselageB:'#1e1b4b', wing:'#312e81', stripe:'#c4b5fd', glow:'#a78bfa', canopy1:'rgba(230,220,255,0.4)', canopy2:'rgba(230,220,255,0.12)' }
+  midnight:{ fuselageA:'#7c3aed', fuselageB:'#1e1b4b', wing:'#312e81', stripe:'#c4b5fd', glow:'#a78bfa', canopy1:'rgba(230,220,255,0.4)', canopy2:'rgba(230,220,255,0.12)' },
+
+  // NEW custom theme
+  inferno:{ fuselageA:'#ff7b1f', fuselageB:'#7a2200', wing:'#4a1c00', stripe:'#ffd085', glow:'#ffb86b',
+            canopy1:'rgba(255,220,180,0.4)', canopy2:'rgba(255,220,180,0.12)' }
 };
 
+
 function drawAirBoss(x, y, s, hullAngle, turretAngle, theme, t=0){
+  // Animation helpers (already used in your old version)
   const pulse = 0.6 + 0.4*Math.sin(t*0.006);
   const thr   = 0.75 + 0.25*Math.sin(t*0.03);
 
+  // ---------- MAIN HULL ----------
   ctx.save();
-  ctx.translate(x,y);
+  ctx.translate(x, y);
   ctx.rotate(hullAngle);
 
-  // shadow
-  ctx.fillStyle='rgba(0,0,0,0.18)';
+  // Ground shadow
+  ctx.fillStyle='rgba(0,0,0,0.22)';
   ctx.beginPath();
-  ctx.ellipse(0, s*0.55, s*0.95, s*0.38, 0, 0, Math.PI*2);
+  ctx.ellipse(0, s*0.58, s*1.05, s*0.42, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // fuselage
-  const fus = ctx.createLinearGradient(-s*0.9, -s*0.4, s*0.9, s*0.4);
+  // Fuselage body (thicker, longer)
+  const fus = ctx.createLinearGradient(-s*0.95, -s*0.44, s*0.95, s*0.44);
   fus.addColorStop(0, theme.fuselageA);
   fus.addColorStop(1, theme.fuselageB);
+  ctx.fillStyle = fus;
+
   if(!CanvasRenderingContext2D.prototype.roundRect){
-    ctx.fillStyle = theme.fuselageA;
+    // Fallback path if roundRect is missing
     ctx.beginPath();
-    ctx.moveTo(-s*0.78,-s*0.22);
-    ctx.quadraticCurveTo(0,-s*0.42, s*0.66,-s*0.20);
-    ctx.lineTo(s*0.82,0);
-    ctx.quadraticCurveTo(0,s*0.42, -s*0.82,0);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(-s*0.9,-s*0.30);
+    ctx.quadraticCurveTo(0,-s*0.50, s*0.75,-s*0.24);
+    ctx.lineTo(s*0.95, 0);
+    ctx.quadraticCurveTo(0, s*0.50, -s*0.9, s*0.30);
+    ctx.closePath();
+    ctx.fill();
   } else {
-    ctx.fillStyle = fus;
-    ctx.roundRect(-s*0.8, -s*0.26, s*1.6, s*0.52, s*0.20); ctx.fill();
+    ctx.roundRect(-s*0.88, -s*0.28, s*1.76, s*0.56, s*0.22);
+    ctx.fill();
   }
 
-  // wings
-  ctx.fillStyle = theme.wing;
-  ctx.beginPath(); // left
-  ctx.moveTo(-s*0.15,-s*0.18);
-  ctx.lineTo(-s*0.75,-s*0.36);
-  ctx.lineTo(-s*0.35,-s*0.02);
-  ctx.closePath(); ctx.fill();
-
-  ctx.beginPath(); // right
-  ctx.moveTo(-s*0.15, s*0.18);
-  ctx.lineTo(-s*0.75, s*0.36);
-  ctx.lineTo(-s*0.35, s*0.02);
-  ctx.closePath(); ctx.fill();
-
-  // tail fin
-  ctx.save();
-  ctx.rotate(-0.015);
-  ctx.beginPath();
-  ctx.moveTo(-s*0.72, -s*0.10);
-  ctx.lineTo(-s*0.52,  0);
-  ctx.lineTo(-s*0.72,  s*0.10);
-  ctx.closePath();
+  // Nose cone (sharper)
   ctx.fillStyle = theme.fuselageB;
+  ctx.beginPath();
+  ctx.moveTo(s*0.95, 0);
+  ctx.lineTo(s*1.10, -s*0.08);
+  ctx.lineTo(s*1.10,  s*0.08);
+  ctx.closePath();
+  ctx.fill();
+
+  // Armor plates (subtle stripes)
+  ctx.lineWidth = Math.max(1.5, s*0.012);
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  for(let i=-3;i<=3;i++){
+    const yy = i*(s*0.07);
+    ctx.beginPath();
+    ctx.moveTo(-s*0.65, yy);
+    ctx.lineTo( s*0.55, yy*0.85);
+    ctx.stroke();
+  }
+
+  // ---------- WINGS (longer & heavier) ----------
+  ctx.fillStyle = theme.wing;
+
+  // Left main wing
+  ctx.beginPath();
+  ctx.moveTo(-s*0.10, -s*0.22);
+  ctx.lineTo(-s*1.05, -s*0.62);
+  ctx.lineTo(-s*0.40, -s*0.04);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right main wing
+  ctx.beginPath();
+  ctx.moveTo(-s*0.10,  s*0.22);
+  ctx.lineTo(-s*1.05,  s*0.62);
+  ctx.lineTo(-s*0.40,  s*0.04);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wing tips (small fins)
+  ctx.fillStyle = theme.fuselageB;
+  ctx.beginPath();
+  ctx.moveTo(-s*1.02, -s*0.62);
+  ctx.lineTo(-s*1.18, -s*0.52);
+  ctx.lineTo(-s*0.94, -s*0.50);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-s*1.02,  s*0.62);
+  ctx.lineTo(-s*1.18,  s*0.52);
+  ctx.lineTo(-s*0.94,  s*0.50);
+  ctx.closePath();
+  ctx.fill();
+
+  // Tail fins (twin)
+  ctx.save();
+  ctx.rotate(-0.012);
+  ctx.fillStyle = theme.fuselageB;
+  ctx.beginPath();
+  ctx.moveTo(-s*0.78, -s*0.12);
+  ctx.lineTo(-s*0.54,  0);
+  ctx.lineTo(-s*0.78,  s*0.12);
+  ctx.closePath();
   ctx.fill();
   ctx.restore();
 
-  // stripes
-  ctx.strokeStyle = theme.stripe; ctx.lineWidth = Math.max(2, s*0.02);
-  ctx.beginPath(); ctx.moveTo(-s*0.65,-s*0.12); ctx.quadraticCurveTo(0,-s*0.22, s*0.55,-s*0.15); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-s*0.65, s*0.12); ctx.quadraticCurveTo(0, s*0.22, s*0.55, s*0.15); ctx.stroke();
+  // ---------- STRIPES ----------
+  ctx.strokeStyle = theme.stripe;
+  ctx.lineWidth = Math.max(2, s*0.02);
+  ctx.beginPath();
+  ctx.moveTo(-s*0.70,-s*0.14);
+  ctx.quadraticCurveTo(0,-s*0.26, s*0.62,-s*0.18);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-s*0.70, s*0.14);
+  ctx.quadraticCurveTo(0, s*0.26, s*0.62, s*0.18);
+  ctx.stroke();
 
-  // canopy
-  const glass = ctx.createLinearGradient(-s*0.1,-s*0.18, s*0.1, s*0.18);
+  // ---------- CANOPY ----------
+  const glass = ctx.createLinearGradient(-s*0.12,-s*0.20, s*0.12, s*0.20);
   glass.addColorStop(0, theme.canopy1);
   glass.addColorStop(1, theme.canopy2);
   ctx.fillStyle = glass;
-  ctx.beginPath(); ctx.ellipse(s*0.10, -s*0.03, s*0.30, s*0.16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(s*0.12, -s*0.03, s*0.34, s*0.18, 0, 0, Math.PI*2);
+  ctx.fill();
 
-  // engine glows (wing roots)
+  // ---------- ENGINE PODS + THRUSTERS ----------
   function engineGlow(ex,ey,rx,ry){
-    const eg = ctx.createRadialGradient(ex,ey,0, ex,ey, rx*2.4*thr);
+    const eg = ctx.createRadialGradient(ex,ey,0, ex,ey, rx*2.8*thr);
     eg.addColorStop(0,'#ffffff');
     eg.addColorStop(0.35, theme.glow);
     eg.addColorStop(1,'rgba(255,255,255,0)');
     ctx.fillStyle = eg;
-    ctx.beginPath(); ctx.ellipse(ex,ey, rx*3.0, ry*1.6, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(ex,ey, rx*3.2, ry*1.8, 0, 0, Math.PI*2);
+    ctx.fill();
   }
-  engineGlow(-s*0.34,-s*0.12, s*0.12, s*0.08);
-  engineGlow(-s*0.34, s*0.12, s*0.12, s*0.08);
+  // engine positions (a bit wider than before)
+  engineGlow(-s*0.40, -s*0.14, s*0.13, s*0.09);
+  engineGlow(-s*0.40,  s*0.14, s*0.13, s*0.09);
 
-  // nose light
+  // Nose beacon (pulsing)
   ctx.fillStyle = theme.stripe;
-  ctx.beginPath(); ctx.ellipse(s*0.78, 0, s*0.04, s*0.04, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(s*1.06, 0, s*0.045*pulse, s*0.045*pulse, 0, 0, Math.PI*2);
+  ctx.fill();
 
-  ctx.restore();
+  ctx.restore(); // end of hull transform
 
-  // nose guns (turreted)
+  // ---------- TURRETED NOSE GUNS ----------
   ctx.save();
-  ctx.translate(x,y);
+  ctx.translate(x, y);
   ctx.rotate(turretAngle);
-  ctx.fillStyle='#0f172a';
+
+  // Barrels (thicker + double-decker)
+  ctx.fillStyle = '#0f172a';
   if(!CanvasRenderingContext2D.prototype.roundRect){
-    ctx.fillRect(s*0.18,-s*0.06, s*0.60, s*0.10);
-    ctx.fillRect(s*0.18, s*0.06 - s*0.10, s*0.60, s*0.10);
+    // top pair
+    ctx.fillRect(s*0.22, -s*0.11, s*0.70, s*0.12);
+    ctx.fillRect(s*0.22, -s*0.26, s*0.56, s*0.08);
+    // bottom pair
+    ctx.fillRect(s*0.22,  s*0.00, s*0.70, s*0.12);
+    ctx.fillRect(s*0.22,  s*0.18, s*0.56, s*0.08);
   } else {
-    ctx.roundRect(s*0.18,-s*0.06, s*0.60, s*0.10, 6); ctx.fill();
-    ctx.roundRect(s*0.18, s*0.06 - s*0.10, s*0.60, s*0.10, 6); ctx.fill();
+    ctx.roundRect(s*0.22, -s*0.11, s*0.70, s*0.12, 8); ctx.fill();
+    ctx.roundRect(s*0.22, -s*0.26, s*0.56, s*0.08, 6); ctx.fill();
+    ctx.roundRect(s*0.22,  s*0.00, s*0.70, s*0.12, 8); ctx.fill();
+    ctx.roundRect(s*0.22,  s*0.18, s*0.56, s*0.08, 6); ctx.fill();
   }
+
+  // Muzzle glows
   ctx.fillStyle = theme.glow;
-  ctx.beginPath(); ctx.ellipse(s*0.82, -s*0.06 + s*0.05, s*0.05, s*0.05, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(s*0.82,  s*0.06 - s*0.05, s*0.05, s*0.05, 0, 0, Math.PI*2); ctx.fill();
+  const muzzle = [
+    {mx:s*0.96, my:-s*0.05},
+    {mx:s*0.96, my: s*0.05},
+    {mx:s*0.78, my:-s*0.22},
+    {mx:s*0.78, my: s*0.22},
+  ];
+  for(const m of muzzle){
+    ctx.beginPath();
+    ctx.ellipse(m.mx, m.my, s*0.05, s*0.05, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
   ctx.restore();
 
-  // soft shield ring
+  // ---------- SOFT SHIELD RING ----------
   ctx.save();
-  ctx.translate(x,y);
-  ctx.strokeStyle = theme.glow + '33';
+  ctx.translate(x, y);
+  ctx.strokeStyle = (theme.glow || '#22d3ee') + '33';
   ctx.lineWidth = Math.max(2, s*0.02);
   ctx.beginPath();
-  ctx.ellipse(0,0, s*0.95, s*0.65, 0, 0, Math.PI*2);
+  ctx.ellipse(0, 0, s*1.05, s*0.70, 0, 0, Math.PI*2);
   ctx.stroke();
   ctx.restore();
 }
 
 /* -------- Boss -------- */
+// Put near your enemy size range for clarity:
+const ENEMY_MIN_SIZE = 28;
+const ENEMY_MAX_SIZE = 56;
+
+// Use a multiplier to keep boss a bit bigger than enemies:
+const BOSS_SIZE_MULT = 1.1; // 1.5–2.0 looks good
+
 class Boss{
   constructor(){
     bossActive=true;
+
+    const avgEnemy = (ENEMY_MIN_SIZE + ENEMY_MAX_SIZE) / 2; // ≈42
+    const baseBoss = Math.round(avgEnemy * BOSS_SIZE_MULT); // ≈71
+
     const variants = [
-      {name:'Sky Ace',     size:120, hp:30, speed:0.72, shots:4, spread:Math.PI/8,  theme:BOSS_PALETTES.azure},
-      {name:'Warhawk',     size:170, hp:64, speed:0.40, shots:7, spread:Math.PI/5,  theme:BOSS_PALETTES.scarlet},
-      {name:'Night Raven', size:200, hp:95, speed:0.34, shots:9, spread:Math.PI/4,  theme:BOSS_PALETTES.midnight}
+      {name:'Sky Ace',     size: baseBoss,       hp:45, speed:0.72, shots:5, spread:Math.PI/7,  theme:BOSS_PALETTES.azure},
+      {name:'Warhawk',     size: baseBoss + 6,   hp:70, speed:0.58, shots:7, spread:Math.PI/5,  theme:BOSS_PALETTES.scarlet},
+      {name:'Night Raven', size: baseBoss + 12,  hp:90, speed:0.52, shots:8, spread:Math.PI/4,  theme:BOSS_PALETTES.midnight}
     ];
+
     this.v = variants[irand(0,variants.length-1)];
     this.size=this.v.size;
     this.maxHealth = this.v.hp + Math.floor(level*3);
     this.health=this.maxHealth;
+    // ... keep the rest unchanged
+    // spawn at screen edge
     const edge = irand(0,3);
     if(edge===0){ this.x=-this.size; this.y=rand(80,WORLD_H-80);}
     else if(edge===1){ this.x=WORLD_W+this.size; this.y=rand(80,WORLD_H-80);}
     else if(edge===2){ this.x=rand(80,WORLD_W-80); this.y=-this.size;}
     else { this.x=rand(80,WORLD_W-80); this.y=WORLD_H+this.size; }
-    this.speed=this.v.speed*DIFF.speed;
-    this.turretAngle=0; this.sinceShot=0; this.shootDelay=700;
-    this.ringTimer=0;
 
+    this.speed=this.v.speed*DIFF.speed;
+    this.turretAngle=0; this.sinceShot=0; this.shootDelay=650; // faster fire
+    this.ringTimer=0;   // for special patterns
     currentBoss = this;
   }
+
   update(dt){
     const dx=player.x-this.x, dy=player.y-this.y, d=Math.hypot(dx,dy)||1;
     this.x+=(dx/d)*this.speed; this.y+=(dy/d)*this.speed;
     this.turretAngle=Math.atan2(player.y-this.y, player.x-this.x);
+
     this.sinceShot+=dt; this.ringTimer+=dt;
+
+    // volley burst
     if(graceMs===0 && this.sinceShot>=this.shootDelay && player.alive){
       this.sinceShot=0;
       for(let i=0;i<this.v.shots;i++){
         const a = this.turretAngle - this.v.spread/2 + (this.v.spread/(this.v.shots-1))*i;
         const tx = this.x + Math.cos(a)*100, ty = this.y + Math.sin(a)*100;
         const b = new EnemyBullet(this.x, this.y, tx, ty, a);
-        b.size = 8;
-        b.speed += (this.v.name==='Sky Ace')?1.8:(this.v.name==='Warhawk'?0.6:1.2);
+        b.size = this.v.name.includes('Dreadnought') ? 10 : 8;
+        b.speed += this.v.name.includes('Sky Ace') ? 1.6 : (this.v.name.includes('Dreadnought') ? 0.8 : 1.0);
         enemyBullets.push(b);
       }
     }
-    if(this.v.name==='Night Raven' && this.ringTimer>3500 && player.alive && graceMs===0){
+
+    // SPECIAL: radial ring every ~3.8s on big boss
+    if(this.v.name.includes('Dreadnought') && this.ringTimer>3800 && player.alive && graceMs===0){
       this.ringTimer=0;
-      for(let a=0;a<Math.PI*2;a+=Math.PI/8){
+      for(let a=0;a<Math.PI*2;a+=Math.PI/9){
         const tx = this.x + Math.cos(a)*120, ty=this.y+Math.sin(a)*120;
-        const b=new EnemyBullet(this.x,this.y,tx,ty,a); b.size=7; b.speed+=0.8; enemyBullets.push(b);
+        const b=new EnemyBullet(this.x,this.y,tx,ty,a); b.size=8; b.speed+=0.9; enemyBullets.push(b);
       }
     }
   }
+
   draw(){
     const s = this.size;
     const hullAngle = this.turretAngle + Math.PI/2;
     drawAirBoss(this.x, this.y, s, hullAngle, this.turretAngle, this.v.theme, nowTime);
 
-    // HUD text
+    // HP text & name
     ctx.save();
     ctx.fillStyle='#0b1a27';
     ctx.font=`900 ${Math.max(24,s*0.20)}px system-ui, Arial`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(this.health, this.x, this.y);
-
     ctx.fillStyle='rgba(15,23,42,0.9)';
     ctx.font='900 16px system-ui, Arial';
     ctx.fillText(this.v.name, this.x, this.y - s*0.70);
