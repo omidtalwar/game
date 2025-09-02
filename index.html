@@ -204,6 +204,26 @@
   </div>
 
 <script>
+  // --- Player multi-shot based on kills ---
+let playerShots = 1; // 1 by default
+
+function computePlayerShots(){
+  // 10 kills => 2 shots, 20 => 3, 30 => 4, etc. (cap if you want)
+  return Math.min(1 + Math.floor(kills / 10), 6);
+}
+
+function applyPlayerShotTier(){
+  const newShots = computePlayerShots();
+  if (newShots > playerShots){
+    playerShots = newShots;
+    // Nice toast to inform player
+    createFloatingText(
+      WORLD_W/2, WORLD_H*0.25,
+      `${playerShots}× FIRE`, '#0b1a27', 34, 'rgba(255,255,255,.85)', 'red'
+    );
+  }
+}
+
 const bgImg = new Image();
 bgImg.crossOrigin = "anonymous"; // needed for external URLs
 bgImg.src = "bg.jpg";
@@ -745,10 +765,31 @@ canvas.addEventListener('mousemove', e=>{
 });
 
 
-function shootToward(mx,my){
-  bullets.push(new Bullet(player.x, player.y, mx, my));
-  synth.fire();
+function shootToward(mx, my){
+  // Aim angle toward click/touch
+  const aim = Math.atan2(my - player.y, mx - player.x);
+  const shots = playerShots; // from kill milestones
+
+  if (shots <= 1){
+    bullets.push(new Bullet(player.x, player.y, mx, my));
+    synth.fire();
+    return;
+  }
+
+  // Spread across a small cone (adjust TOTAL_SPREAD to taste)
+  const TOTAL_SPREAD = Math.min(0.28, 0.10 * (shots - 1)); // radians
+  const step = (shots === 1) ? 0 : (TOTAL_SPREAD / (shots - 1));
+  const start = aim - TOTAL_SPREAD / 2;
+
+  for (let i = 0; i < shots; i++){
+    const a = start + step * i;
+    const tx = player.x + Math.cos(a) * 200;
+    const ty = player.y + Math.sin(a) * 200;
+    bullets.push(new Bullet(player.x, player.y, tx, ty));
+  }
+  synth.fire(); // play once per volley
 }
+
 canvas.addEventListener('click', e=>{
   if(!gameStarted){ return; }
   if(!player.alive){ restart(); return; }
@@ -865,12 +906,31 @@ startBtn.addEventListener('click', ()=> startGame());
 let fireInterval=null;
 function fireForward(){
   if(!gameStarted || paused || !player.alive) return;
+
   const aim = player.angle - Math.PI/2;
-  const tx = player.x + Math.cos(aim)*200;
-  const ty = player.y + Math.sin(aim)*200;
-  bullets.push(new Bullet(player.x, player.y, tx, ty));
+  const shots = playerShots;
+
+  if (shots <= 1){
+    const tx = player.x + Math.cos(aim)*200;
+    const ty = player.y + Math.sin(aim)*200;
+    bullets.push(new Bullet(player.x, player.y, tx, ty));
+    synth.fire();
+    return;
+  }
+
+  const TOTAL_SPREAD = Math.min(0.28, 0.10 * (shots - 1));
+  const step = (shots === 1) ? 0 : (TOTAL_SPREAD / (shots - 1));
+  const start = aim - TOTAL_SPREAD / 2;
+
+  for (let i = 0; i < shots; i++){
+    const a = start + step * i;
+    const tx = player.x + Math.cos(a) * 200;
+    const ty = player.y + Math.sin(a) * 200;
+    bullets.push(new Bullet(player.x, player.y, tx, ty));
+  }
   synth.fire();
 }
+
 fireBtn.addEventListener('pointerdown', e=>{
   fireBtn.setPointerCapture(e.pointerId);
   fireForward();
@@ -1283,7 +1343,8 @@ function update(dt){
           score += isBoss ? 40 : Math.ceil(e.maxHealth*2);
           const coinGain = isBoss ? irand(8,14) : (irand(1,3) + Math.max(0, level-1));
           coins += coinGain; coinsEl.textContent=coins;
-          if(!isBoss){ kills += 1; }
+          if(!isBoss){ kills += 1;applyPlayerShotTier();
+ }
           createFloatingText(e.x,e.y, isBoss? `+${coinGain}c BOSS` : `+${coinGain}c`, '#b45309', Math.max(20,(e.size||60)*0.40));
           synth.coin();
 
@@ -1409,6 +1470,8 @@ function startGame(){
   scoreEl.textContent=score; enemiesEl.textContent=0; killsEl.textContent=kills; coinsEl.textContent=coins; hpEl.textContent=player.hp;
   overlay.classList.add('hidden'); synth.setPaused(false);
   setTimeout(()=>{ enemies.push(new Enemy()); }, 500);
+  playerShots = 1;
+
 }
 function togglePause(state){ if(!gameStarted) return; paused = state; synth.setPaused(state); if(paused) showPause(); else overlay.classList.add('hidden'); }
 function restart(){
@@ -1418,6 +1481,8 @@ function restart(){
   joyMag=0; joyVec.x=0; joyVec.y=0; hideJoy();
   graceMs = 3000; scoreEl.textContent=score; enemiesEl.textContent=0; killsEl.textContent=kills; levelEl.textContent=level; coinsEl.textContent=coins; hpEl.textContent=player.hp;
   overlay.classList.add('hidden'); gameStarted=true; synth.setPaused(false); setTimeout(()=>{ enemies.push(new Enemy()); }, 500);
+playerShots = 1;
+
 }
 
 /* Optional: mouse aim helper on desktop */
